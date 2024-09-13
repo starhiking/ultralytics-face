@@ -128,6 +128,7 @@ class BaseModel(nn.Module):
             (torch.Tensor): The last output of the model.
         """
         y, dt, embeddings = [], [], []  # outputs
+        neck_feature_index = [15,18,21] # P3, P4, P5
         for m in self.model:
             if m.f != -1:  # if not from previous layer
                 x = y[m.f] if isinstance(m.f, int) else [x if j == -1 else y[j] for j in m.f]  # from earlier layers
@@ -141,7 +142,8 @@ class BaseModel(nn.Module):
                 embeddings.append(nn.functional.adaptive_avg_pool2d(x, (1, 1)).squeeze(-1).squeeze(-1))  # flatten
                 if m.i == max(embed):
                     return torch.unbind(torch.cat(embeddings, 1), dim=0)
-        return x
+        neck_features = [y[neck_i] for neck_i in neck_feature_index]
+        return x, neck_features
 
     def _predict_augment(self, x):
         """Perform augmentations on input image x and return augmented inference."""

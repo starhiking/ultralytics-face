@@ -56,6 +56,8 @@ if __name__ == '__main__':
     model.fuse()
     example_inputs = torch.randn((opt.batch, 3, *opt.imgs)).to(device)
     
+    y, neck = model(example_inputs)
+    
     if opt.half:
         model = model.half()
         example_inputs = example_inputs.half()
