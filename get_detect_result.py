@@ -27,12 +27,13 @@ if __name__ == '__main__':
     #              name='test',
     #              )
     
-    model = YOLO('yolov8n-pose-face-baseline.pt')
-    model.predict(source='video.mp4',
+    # model = YOLO('yolov8n-pose-face-baseline.pt')
+    model = YOLO('yolov8n-face.pt')
+    model.predict(source='/mnt/data/lanxing/UTK-face-wild/images/',
                  imgsz=640,
                  conf=0.25,
                  save=True,
                  device='cpu',
-                 project='runs/widerface-detect',
-                 name='video-test',
+                 project='runs/yolo-v8-widerface-detect',
+                 name='debug_test_standard',
                  )
