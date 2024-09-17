@@ -97,6 +97,31 @@ def get_feat_from_img_path(img_path, model):
     neck_unpad_features = unpad_neck(neck, ori_shape)
     return neck_unpad_features
 
+def merge_all_features(neck_feature_list):
+    # note the features list contains not equal image ratio features
+    assert len(neck_feature_list) == 3, "Yolo-v8 produce 3 neck features"
+    # neck_feature_0 : 1, 64, 55, 80
+    # neck_feature_1 : 1, 128, 27, 40
+    # neck_feature_2 : 1, 256, 14, 20
+
+    # first align the shape of neck_feature_0 and neck_feature_1 to neck_feature_2
+    target_feature_shape = neck_feature_list[2].shape[2:] # 14, 20
+    double_shape = [2 * target_feature_shape[0], 2 * target_feature_shape[1]]
+    four_shape = [4 * target_feature_shape[0], 4 * target_feature_shape[1]]
+
+    neck_resize_feature_0 = torch.nn.functional.interpolate(neck_feature_list[0], size=four_shape, mode='bilinear')
+    neck_feature_resize_0 = torch.nn.functional.avg_pool2d(neck_resize_feature_0, kernel_size=4, stride=4)
+    
+    neck_resize_feature_1 = torch.nn.functional.interpolate(neck_feature_list[1], size=double_shape, mode='bilinear')
+    neck_feature_resize_1 = torch.nn.functional.avg_pool2d(neck_resize_feature_1, kernel_size=2, stride=2)
+    
+    # direct_resize_feature_0 = torch.nn.functional.interpolate(neck_feature_list[0], size=target_feature_shape, mode='bilinear')
+    # direct_resize_feature_1 = torch.nn.functional.interpolate(neck_feature_list[1], size=target_feature_shape, mode='bilinear')
+
+    assert neck_feature_resize_0.shape[2:] == neck_feature_resize_1.shape[2:] == neck_feature_list[2].shape[2:], f"Resize Error"
+    merge_feature = torch.cat([neck_feature_resize_0, neck_feature_resize_1, neck_feature_list[2]], dim=1)
+    return merge_feature
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--source',default='/mnt/data/lanxing/UTK-face-wild/images/', type=str, help='source')
@@ -111,4 +136,6 @@ if __name__ == '__main__':
     neck_unpad_features_list = []
     for img_path in tqdm(img_paths[:100]):
         neck_unpad_features = get_feat_from_img_path(img_path, model)
+        # print(neck_unpad_features[0].shape, neck_unpad_features[1].shape, neck_unpad_features[2].shape)
+        merge_feature = merge_all_features(neck_unpad_features)
         
